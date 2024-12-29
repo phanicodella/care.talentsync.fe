@@ -1,0 +1,498 @@
+filepath:///cg_cat.py /// /// ///
+file code{
+﻿import os
+import fnmatch
+from pathlib import Path
+
+
+def should_exclude_dir(dir_name):
+    """Check if directory should be excluded."""
+    exclude_patterns = {
+        'node_modules',
+        'venv',
+        '.git',
+        'build',
+        'dist',
+        'bin',
+        'obj',
+        '__pycache__',
+        '.vs',
+        '.idea',
+        'packages',
+        'vendor',
+        'bower_components',
+        'jspm_packages',
+        'lib',
+        'out',
+        'target',
+        'Debug',
+        'Release'
+    }
+    return any(dir_name.lower().startswith(pattern) for pattern in exclude_patterns)
+
+
+def is_source_file(filename):
+    """Check if file is a source code file and not unnecessary manifests or configs."""
+    source_patterns = [
+        '*.js', '*.jsx', '*.ts', '*.tsx',  # JavaScript/TypeScript
+        '*.py',                            # Python
+        '*.cs',                            # C#
+        '*.css', '*.scss', '*.sass',       # Stylesheets
+        '*.html', '*.htm',                 # HTML
+        '*.java',                          # Java
+        '*.cpp', '*.hpp', '*.c', '*.h',    # C/C++
+        '*.go',                            # Go
+        '*.rb',                            # Ruby
+        '*.php',                           # PHP
+        '*.swift',                         # Swift
+        '*.rs',                            # Rust
+        '*.vue', '*.svelte',               # Web frameworks
+        '*.xml', '*.json',                 # Data formats
+        '*.yaml', '*.yml'                  # Configuration files
+    ]
+    exclude_files = [
+        '*-lock.json',                     # Exclude lock files
+        '*-weights_manifest.json',         # Manifest files
+        '*.eslint*',                       # ESLint configuration
+        '*.prettier*',                     # Prettier configuration
+        '*.log', 
+        '*.lock',                           # Log files
+        'README.md',                       # Documentation
+        '*.md'                             # Other markdown files
+    ]
+    include_files = [
+        'package.json'                     # Explicitly include package.json
+    ]
+
+
+    # Match only source files and exclude unnecessary files
+    if filename in include_files:
+        return True
+    return (
+        any(fnmatch.fnmatch(filename.lower(), pattern) for pattern in source_patterns) and
+        not any(fnmatch.fnmatch(filename.lower(), exclude) for exclude in exclude_files)
+    )
+
+
+def capture_source_code(root_dir='.', output_file='CompleteSourceCode.txt'):
+    """
+    Capture all source code files from the project directory.
+
+
+    Args:
+        root_dir (str): Root directory to start scanning from
+        output_file (str): Output file path
+    """
+    root_path = Path(root_dir).absolute()
+
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for root, dirs, files in os.walk(root_dir):
+            # Remove excluded directories
+            dirs[:] = [d for d in dirs if not should_exclude_dir(d)]
+
+
+            for file in files:
+                if is_source_file(file):
+                    file_path = Path(root) / file
+                    try:
+                        # Use os.path.relpath for more reliable path calculation
+                        relative_path = os.path.relpath(file_path, root_path)
+
+
+                        with open(file_path, 'r', encoding='utf-8') as source_file:
+                            content = source_file.read()
+
+
+                            # Write file path and content with separator
+                            f.write(f"filepath:///{relative_path} /// /// ///\n")
+                            f.write("file code{\n")
+                            f.write(content)
+                            f.write("\n}\n\n")
+
+
+                    except Exception as e:
+                        print(f"Error processing file {file_path}: {str(e)}")
+
+
+
+
+if __name__ == "__main__":
+    try:
+        current_dir = os.getcwd()
+        capture_source_code(current_dir)
+        print("Source code capture completed successfully!")
+        print("Output saved to: CompleteSourceCode.txt")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+}
+
+filepath:///index.html /// /// ///
+file code{
+<!-- /frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">TalentSync</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="dashboardLink">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="scheduleLink">Schedule Interview</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Upcoming Interviews</h4>
+                        <button class="btn btn-primary" id="scheduleBtn">Schedule New Interview</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Candidate Name</th>
+                                        <th>Date & Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="interviewsList">
+                                    <!-- JavaScript will populate this -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Scheduling Interview -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule New Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleForm">
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Name</label>
+                            <input type="text" class="form-control" id="candidateName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Email</label>
+                            <input type="email" class="form-control" id="candidateEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="interviewDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Time</label>
+                            <input type="time" class="form-control" id="interviewTime" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveSchedule">Schedule Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/calendar.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
+}
+
+filepath:///login.html /// /// ///
+file code{
+<!-- /frontend/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TalentSync</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">TalentSync</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Interviewer Login</h5>
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="emailInput" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" id="passwordInput" required>
+                            </div>
+                            <div id="loginError" class="alert alert-danger d-none"></div>
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/login.js"></script>
+</body>
+</html>
+}
+
+filepath:///css\styles.css /// /// ///
+file code{
+
+}
+
+filepath:///js\app.js /// /// ///
+file code{
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyCtqnl-95_iYESTBHu_FlFtj80Ab4zMqZk",
+    authDomain: "talentsync-70bbb.firebaseapp.com",
+    projectId: "talentsync-70bbb",
+    storageBucket: "talentsync-70bbb.firebasestorage.app",
+    messagingSenderId: "13476679191",
+    appId: "1:13476679191:web:f328102e1b692d07b51652"
+  };
+  
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  
+  // Initialize Firebase Auth and Firestore
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  
+  // Check authentication state
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      // User is signed in
+      console.log('User is signed in:', user.email);
+      document.body.classList.add('logged-in');
+      loadInterviews();  // Load interviews when user is authenticated
+    } else {
+      // User is signed out
+      console.log('User is signed out');
+      document.body.classList.remove('logged-in');
+      // Redirect to login if not on login page
+      if (!window.location.pathname.includes('login.html')) {
+        window.location.href = 'login.html';
+      }
+    }
+  });
+  
+  // Handle interview scheduling form submission
+  document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      try {
+          const candidateName = document.getElementById('candidateName').value;
+          const candidateEmail = document.getElementById('candidateEmail').value;
+          const date = document.getElementById('interviewDate').value;
+          const time = document.getElementById('interviewTime').value;
+  
+          // Combine date and time into a timestamp
+          const interviewDateTime = new Date(`${date}T${time}`);
+  
+          // Generate a Jitsi meeting link
+          const meetingLink = `https://meet.jit.si/${generateMeetingId()}`;
+  
+          // Add to Firestore
+          await db.collection('interviews').add({
+              candidateName,
+              candidateEmail,
+              date: firebase.firestore.Timestamp.fromDate(interviewDateTime),
+              status: 'scheduled',
+              meetingLink,
+              interviewerId: auth.currentUser.uid,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+  
+          // Close modal and reset form
+          const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleModal'));
+          modal.hide();
+          document.getElementById('scheduleForm').reset();
+  
+          // Refresh interviews list
+          loadInterviews();
+  
+      } catch (error) {
+          console.error('Error scheduling interview:', error);
+          alert('Error scheduling interview. Please try again.');
+      }
+  });
+  
+  // Function to generate a unique meeting ID
+  function generateMeetingId() {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 15);
+      return `interview-${timestamp}-${random}`;
+  }
+  
+  // Function to load interviews
+  async function loadInterviews() {
+      try {
+          const snapshot = await db.collection('interviews')
+              .where('interviewerId', '==', auth.currentUser.uid)
+              .orderBy('date', 'asc')
+              .get();
+  
+          const interviewsList = document.getElementById('interviewsList');
+          interviewsList.innerHTML = '';
+  
+          snapshot.forEach((doc) => {
+              const interview = doc.data();
+              const date = interview.date.toDate();
+              
+              interviewsList.innerHTML += `
+                  <tr>
+                      <td>${interview.candidateName}</td>
+                      <td>${date.toLocaleString()}</td>
+                      <td><span class="badge bg-primary">${interview.status}</span></td>
+                      <td>
+                          <a href="${interview.meetingLink}" target="_blank" class="btn btn-sm btn-success">Join</a>
+                          <button onclick="copyLink('${interview.meetingLink}')" class="btn btn-sm btn-secondary">Copy Link</button>
+                      </td>
+                  </tr>
+              `;
+          });
+      } catch (error) {
+          console.error('Error loading interviews:', error);
+          alert('Error loading interviews. Please refresh the page.');
+      }
+  }
+  
+  // Function to copy meeting link
+  function copyLink(link) {
+      navigator.clipboard.writeText(link)
+          .then(() => alert('Link copied to clipboard!'))
+          .catch(err => console.error('Error copying link:', err));
+  }
+  
+  // Initialize UI when document loads
+  document.addEventListener('DOMContentLoaded', () => {
+      // Initialize the schedule modal
+      const scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+      
+      // Show modal when schedule button is clicked
+      document.getElementById('scheduleBtn').addEventListener('click', () => {
+          scheduleModal.show();
+      });
+  
+      // Add logout functionality
+      const logoutBtn = document.createElement('button');
+      logoutBtn.className = 'btn btn-outline-light ms-auto';
+      logoutBtn.textContent = 'Logout';
+      logoutBtn.addEventListener('click', () => {
+          auth.signOut().then(() => {
+              window.location.href = 'login.html';
+          }).catch((error) => {
+              console.error('Error signing out:', error);
+          });
+      });
+      document.querySelector('.navbar-nav').appendChild(logoutBtn);
+  });
+}
+
+filepath:///js\calendar.js /// /// ///
+file code{
+
+}
+
+filepath:///js\login.js /// /// ///
+file code{
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyCtqnl-95_iYESTBHu_FlFtj80Ab4zMqZk",
+    authDomain: "talentsync-70bbb.firebaseapp.com",
+    projectId: "talentsync-70bbb",
+    storageBucket: "talentsync-70bbb.firebasestorage.app",
+    messagingSenderId: "13476679191",
+    appId: "1:13476679191:web:f328102e1b692d07b51652"
+  };
+  
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  
+  // Login form handling
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+      const errorDiv = document.getElementById('loginError');
+      
+      try {
+          await auth.signInWithEmailAndPassword(email, password);
+          // Redirect to main page on successful login
+          window.location.href = 'index.html';
+      } catch (error) {
+          errorDiv.textContent = error.message;
+          errorDiv.classList.remove('d-none');
+      }
+  });
+  
+  // Check if user is already logged in
+  auth.onAuthStateChanged((user) => {
+      if (user) {
+          window.location.href = 'index.html';
+      }
+  });
+}
+

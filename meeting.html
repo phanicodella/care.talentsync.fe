@@ -1,0 +1,102 @@
+
+<!-- /frontend/meeting.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TalentSync Interview Meeting Room">
+    <title>Interview Meeting - TalentSync</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+    <!-- Jitsi Meet External API -->
+    <script src='https://meet.jit.si/external_api.js'></script>
+</head>
+<body class="meeting-page">
+    <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-white d-flex justify-content-center align-items-center">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading meeting room...</span>
+            </div>
+            <p class="mb-0">Preparing your meeting room...</p>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="assets/logo-white.png" alt="TalentSync" height="30">
+            </a>
+            <div class="d-flex align-items-center">
+                <span id="meetingInfo" class="text-white me-3"></span>
+                <button id="leaveButton" class="btn btn-outline-light" title="Leave Meeting">
+                    Leave Meeting
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-0">
+        <div id="jitsiContainer" class="meeting-container"></div>
+    </div>
+
+    <!-- Meeting Controls Modal -->
+    <div class="modal fade" id="meetingControlsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Meeting Controls</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-grid gap-3">
+                        <button id="toggleAudioBtn" class="btn btn-outline-primary">
+                            <i class="bi bi-mic-fill"></i> Toggle Audio
+                        </button>
+                        <button id="toggleVideoBtn" class="btn btn-outline-primary">
+                            <i class="bi bi-camera-video-fill"></i> Toggle Video
+                        </button>
+                        <button id="toggleScreenShareBtn" class="btn btn-outline-primary">
+                            <i class="bi bi-display-fill"></i> Toggle Screen Share
+                        </button>
+                        <button id="toggleChatBtn" class="btn btn-outline-primary">
+                            <i class="bi bi-chat-fill"></i> Toggle Chat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Error</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage">Unable to join the meeting. Please check your meeting link and try again.</p>
+                </div>
+                <div class="modal-footer">
+                    <a href="index.html" class="btn btn-primary">Return to Dashboard</a>
+                    <button type="button" class="btn btn-secondary" onclick="location.reload()">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/meeting.js"></script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!-- /frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TalentSync Interview Management Dashboard">
+    <title>TalentSync</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">TalentSync</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="dashboardLink">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="scheduleLink">Schedule Interview</a>
+                    </li>
+                </ul>
+                <!-- Logout button will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <h4 class="mb-0">Upcoming Interviews</h4>
+                        <button class="btn btn-primary" id="scheduleBtn">Schedule New Interview</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Candidate Name</th>
+                                        <th>Date & Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="interviewsList">
+                                    <tr>
+                                        <td colspan="4" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Scheduling Interview -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule New Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleForm" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Name</label>
+                            <input type="text" class="form-control" id="candidateName" required 
+                                   pattern="^[a-zA-Z\s]{2,50}$" 
+                                   title="Please enter a valid name (2-50 characters)">
+                            <div class="invalid-feedback">Please enter a valid name (2-50 characters)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Email</label>
+                            <input type="email" class="form-control" id="candidateEmail" required>
+                            <div class="invalid-feedback">Please enter a valid email address</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="interviewDate" required>
+                            <div class="invalid-feedback">Please select a future date</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Time</label>
+                            <input type="time" class="form-control" id="interviewTime" required>
+                            <div class="invalid-feedback">Please select a valid time</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveSchedule">Schedule Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Interview Feedback -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Interview Feedback</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="feedbackForm" novalidate>
+                        <div class="mb-4">
+                            <label class="form-label d-flex justify-content-between">
+                                <span>Technical Skills</span>
+                                <span id="technicalValue">3/5</span>
+                            </label>
+                            <input type="range" class="form-range" min="1" max="5" value="3" id="technicalSkills" required>
+                            <div class="d-flex justify-content-between text-muted">
+                                <small>Needs Improvement</small>
+                                <small>Excellent</small>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label d-flex justify-content-between">
+                                <span>Communication Skills</span>
+                                <span id="communicationValue">3/5</span>
+                            </label>
+                            <input type="range" class="form-range" min="1" max="5" value="3" id="communicationSkills" required>
+                            <div class="d-flex justify-content-between text-muted">
+                                <small>Needs Improvement</small>
+                                <small>Excellent</small>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Interview Notes</label>
+                            <textarea class="form-control" id="interviewNotes" rows="4" required 
+                                      minlength="50" placeholder="Please provide detailed interview notes (minimum 50 characters)"></textarea>
+                            <div class="invalid-feedback">Please provide detailed notes (minimum 50 characters)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">AI-Generated Summary</label>
+                            <div id="aiSummary" class="p-3 border rounded bg-light">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary d-none" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="text-muted mb-0">AI summary will appear here as you type...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveFeedback">Save Feedback</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/calendar.js"></script>
+    <script src="js/feedback.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
