@@ -12,8 +12,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-
-// Initialize Firebase Auth and Firestore
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -32,84 +30,68 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// Handle interview scheduling form submission
-document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
+// Handle interview scheduling
+document.getElementById('saveSchedule')?.addEventListener('click', async () => {
     try {
+        const form = document.getElementById('scheduleForm');
+        
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+
         const candidateName = document.getElementById('candidateName').value;
         const candidateEmail = document.getElementById('candidateEmail').value;
         const date = document.getElementById('interviewDate').value;
         const time = document.getElementById('interviewTime').value;
 
-        // Validate date is not in the past
+        // Combine date and time into a timestamp
         const interviewDateTime = new Date(`${date}T${time}`);
-        const now = new Date();
-        if (interviewDateTime <= now) {
-            throw new Error('Please select a future date and time');
+
+        // Validate future date
+        if (interviewDateTime <= new Date()) {
+            showNotification('Please select a future date and time', 'error');
+            return;
         }
 
-        // Generate a Jitsi meeting link
-        const meetingLink = `https://meet.jit.si/${generateMeetingId()}`;
-
         // Add to Firestore
-        const docRef = await db.collection('interviews').add({
+        await db.collection('interviews').add({
             candidateName,
             candidateEmail,
             date: firebase.firestore.Timestamp.fromDate(interviewDateTime),
             status: 'scheduled',
-            meetingLink,
             interviewerId: auth.currentUser.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Get the created interview data for calendar
-        const interview = {
-            id: docRef.id,
-            candidateName,
-            candidateEmail,
-            date: firebase.firestore.Timestamp.fromDate(interviewDateTime),
-            meetingLink
-        };
-
-        // Generate calendar invite
-        sendCalendarInvite(interview);
-
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleModal'));
         modal.hide();
-        document.getElementById('scheduleForm').reset();
+        form.reset();
+        form.classList.remove('was-validated');
 
         // Refresh interviews list
         loadInterviews();
-
-        // Show success notification
         showNotification('Interview scheduled successfully!', 'success');
 
     } catch (error) {
         console.error('Error scheduling interview:', error);
-        showNotification(error.message || 'Error scheduling interview. Please try again.', 'error');
+        showNotification('Error scheduling interview. Please try again.', 'error');
     }
 });
-
-// Function to generate a unique meeting ID
-// Update this function in app.js
-function generateMeetingId() {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 15);
-    const meetingId = `talentsync-${timestamp}-${random}`;
-    return `${window.location.origin}/meeting.html?id=${meetingId}`;
-}
 
 // Function to load interviews
 async function loadInterviews() {
     try {
         const snapshot = await db.collection('interviews')
             .where('interviewerId', '==', auth.currentUser.uid)
-            .orderBy('date', 'asc')
+            .orderBy('date', 'desc')
             .get();
 
         const interviewsList = document.getElementById('interviewsList');
+        
+        if (!interviewsList) return; // Not on the interviews page
+        
         interviewsList.innerHTML = '';
 
         if (snapshot.empty) {
@@ -122,7 +104,7 @@ async function loadInterviews() {
         }
 
         snapshot.forEach((doc) => {
-            const interview = { id: doc.id, ...doc.data() };
+            const interview = doc.data();
             const date = interview.date.toDate();
             const isPast = date < new Date();
             
@@ -130,12 +112,19 @@ async function loadInterviews() {
                 <tr${isPast ? ' class="table-secondary"' : ''}>
                     <td>${interview.candidateName}</td>
                     <td>${date.toLocaleString()}</td>
-                    <td><span class="badge bg-${interview.status === 'cancelled' ? 'danger' : 'primary'}">${interview.status}</span></td>
+                    <td>
+                        <span class="badge bg-${interview.status === 'cancelled' ? 'danger' : 'primary'}">
+                            ${interview.status}
+                        </span>
+                    </td>
                     <td>
                         ${!isPast && interview.status !== 'cancelled' ? `
-                            <a href="${interview.meetingLink}" target="_blank" class="btn btn-sm btn-success">Join</a>
-                            <button onclick="copyLink('${interview.meetingLink}')" class="btn btn-sm btn-secondary">Copy Link</button>
-                            <button onclick="cancelInterview('${doc.id}')" class="btn btn-sm btn-danger">Cancel</button>
+                            <a href="interview-analysis.html?id=${doc.id}" 
+                               class="btn btn-sm btn-success">Join</a>
+                            <button onclick="copyLink('${doc.id}')" 
+                                    class="btn btn-sm btn-secondary">Copy Link</button>
+                            <button onclick="cancelInterview('${doc.id}')" 
+                                    class="btn btn-sm btn-danger">Cancel</button>
                         ` : ''}
                     </td>
                 </tr>
@@ -147,8 +136,9 @@ async function loadInterviews() {
     }
 }
 
-// Function to copy meeting link
-function copyLink(link) {
+// Function to copy interview link
+function copyLink(interviewId) {
+    const link = `${window.location.origin}/interview-analysis.html?id=${interviewId}`;
     navigator.clipboard.writeText(link)
         .then(() => showNotification('Link copied to clipboard!', 'success'))
         .catch(err => {
@@ -166,8 +156,10 @@ async function cancelInterview(interviewId) {
     try {
         await db.collection('interviews').doc(interviewId).update({
             status: 'cancelled',
-            cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+            cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+            cancelledBy: auth.currentUser.uid
         });
+        
         loadInterviews();
         showNotification('Interview cancelled successfully', 'success');
     } catch (error) {
@@ -197,15 +189,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
     
     // Show modal when schedule button is clicked
-    document.getElementById('scheduleBtn').addEventListener('click', () => {
+    document.getElementById('scheduleBtn')?.addEventListener('click', () => {
         scheduleModal.show();
     });
 
     // Set minimum date for interview scheduling
     const dateInput = document.getElementById('interviewDate');
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    dateInput.min = tomorrow.toISOString().split('T')[0];
+    if (dateInput) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        dateInput.min = tomorrow.toISOString().split('T')[0];
+    }
 
     // Add logout functionality
     const logoutBtn = document.createElement('button');
@@ -219,5 +213,5 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Error signing out', 'error');
         });
     });
-    document.querySelector('.navbar-nav').appendChild(logoutBtn);
+    document.querySelector('.navbar-nav')?.appendChild(logoutBtn);
 });

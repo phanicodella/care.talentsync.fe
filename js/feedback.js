@@ -1,22 +1,20 @@
 // /frontend/js/feedback.js
-
 class FeedbackService {
-    static #API_URL = '/api/feedback'; // Will be handled by backend
+    static #API_URL = '/api/feedback';
 
-    // Initialize AI feedback processing
     static async generateFeedbackSummary(feedbackData) {
         try {
-            const response = await fetch(this.#API_URL, {
+            const response = await fetch(`${this.#API_URL}/generate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${await this.getAuthToken()}`
                 },
                 body: JSON.stringify({
+                    interviewId: feedbackData.interviewId,
                     technicalSkills: feedbackData.technicalSkills,
                     communicationSkills: feedbackData.communicationSkills,
-                    notes: feedbackData.notes,
-                    interviewId: feedbackData.interviewId
+                    notes: feedbackData.notes
                 })
             });
 
@@ -25,14 +23,13 @@ class FeedbackService {
             }
 
             const data = await response.json();
-            return data.summary;
+            return data.feedback;
         } catch (error) {
             console.error('Error generating feedback:', error);
             throw error;
         }
     }
 
-    // Get authentication token for API requests
     static async getAuthToken() {
         try {
             const user = firebase.auth().currentUser;
@@ -46,7 +43,6 @@ class FeedbackService {
         }
     }
 
-    // Save feedback to Firestore
     static async saveFeedback(interviewId, feedbackData) {
         try {
             const db = firebase.firestore();
@@ -63,7 +59,6 @@ class FeedbackService {
         }
     }
 
-    // Load existing feedback
     static async loadFeedback(interviewId) {
         try {
             const db = firebase.firestore();
@@ -80,7 +75,6 @@ class FeedbackService {
         }
     }
 
-    // Initialize feedback form
     static initializeFeedbackForm(interviewId) {
         const form = document.getElementById('feedbackForm');
         const aiSummary = document.getElementById('aiSummary');
@@ -116,7 +110,25 @@ class FeedbackService {
                         };
 
                         const summary = await this.generateFeedbackSummary(feedbackData);
-                        aiSummary.textContent = summary;
+                        
+                        // Display comprehensive AI feedback
+                        aiSummary.innerHTML = `
+                            <h6>Overall Assessment</h6>
+                            <p>${summary.overallAssessment}</p>
+                            
+                            <h6>Technical Strengths</h6>
+                            <p>${summary.technicalStrengths}</p>
+                            
+                            <h6>Areas for Improvement</h6>
+                            <p>${summary.areasForImprovement}</p>
+                            
+                            <h6>Final Recommendation</h6>
+                            <p>${summary.finalRecommendation}</p>
+                            
+                            <h6>Fraud Risk Assessment</h6>
+                            <p>Risk Score: ${summary.fraudRiskAssessment.score.toFixed(2)}/10</p>
+                            <p>Risk Category: ${summary.fraudRiskAssessment.category}</p>
+                        `;
                     } catch (error) {
                         aiSummary.textContent = 'Error generating summary. Please try again.';
                         console.error('Error:', error);
@@ -149,7 +161,7 @@ class FeedbackService {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
                 modal.hide();
                 
-                // Show success notification (assuming showNotification function exists)
+                // Show success notification
                 window.showNotification('Feedback saved successfully', 'success');
             } catch (error) {
                 window.showNotification('Error saving feedback', 'error');
@@ -163,13 +175,79 @@ class FeedbackService {
                 document.getElementById('technicalSkills').value = feedback.technicalSkills;
                 document.getElementById('communicationSkills').value = feedback.communicationSkills;
                 document.getElementById('interviewNotes').value = feedback.notes;
-                aiSummary.textContent = feedback.aiSummary;
+                
+                // Restore AI summary with detailed formatting
+                aiSummary.innerHTML = `
+                    <h6>Overall Assessment</h6>
+                    <p>${feedback.overallAssessment}</p>
+                    
+                    <h6>Technical Strengths</h6>
+                    <p>${feedback.technicalStrengths}</p>
+                    
+                    <h6>Areas for Improvement</h6>
+                    <p>${feedback.areasForImprovement}</p>
+                    
+                    <h6>Final Recommendation</h6>
+                    <p>${feedback.finalRecommendation}</p>
+                    
+                    <h6>Fraud Risk Assessment</h6>
+                    <p>Risk Score: ${feedback.fraudRiskAssessment.score.toFixed(2)}/10</p>
+                    <p>Risk Category: ${feedback.fraudRiskAssessment.category}</p>
+                `;
                 
                 // Update displays
                 document.getElementById('technicalValue').textContent = `${feedback.technicalSkills}/5`;
                 document.getElementById('communicationValue').textContent = `${feedback.communicationSkills}/5`;
             }
         });
+    }
+
+    // Additional utility methods
+    static async retrieveFeedback(interviewId) {
+        try {
+            const response = await fetch(`${this.#API_URL}/${interviewId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${await this.getAuthToken()}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to retrieve feedback');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error retrieving feedback:', error);
+            throw error;
+        }
+    }
+
+    // Export method for external use
+    static export(feedbackData) {
+        const exportWindow = window.open('', '_blank');
+        exportWindow.document.write(`
+            <html>
+                <head>
+                    <title>Interview Feedback Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
+                        h1 { color: #333; }
+                        h2 { color: #666; }
+                        p { margin-bottom: 15px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>TalentSync Interview Feedback</h1>
+                    <h2>Candidate Assessment</h2>
+                    <p><strong>Technical Skills:</strong> ${feedbackData.technicalSkills}/5</p>
+                    <p><strong>Communication Skills:</strong> ${feedbackData.communicationSkills}/5</p>
+                    <h2>Detailed Feedback</h2>
+                    <p>${feedbackData.aiSummary}</p>
+                </body>
+            </html>
+        `);
+        exportWindow.document.close();
     }
 }
 
