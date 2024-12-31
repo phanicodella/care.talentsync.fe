@@ -4,7 +4,7 @@
     "description": "TalentSync Interview Management Frontend",
     "main": "index.html",
     "scripts": {
-      "start": "npx serve",
+      "start": "npx serve -l 5000",
       "lint": "eslint js/*.js",
       "format": "prettier --write \"js/**/*.js\""
     },

@@ -19,6 +19,7 @@ const db = firebase.firestore();
 auth.onAuthStateChanged((user) => {
     if (user) {
         console.log('User is signed in:', user.email);
+        document.body.classList.remove('loading');
         document.body.classList.add('logged-in');
         loadInterviews();
     } else {
